@@ -25,12 +25,12 @@ impl Error {
     }
 
     pub fn print(&self, source: &str) {
-        print!("\n{}{}Error{}: ", color::Fg(color::Red), style::Bold, color::Fg(color::Reset));
+        print!("\n{}{}error{}: ", color::Fg(color::Red), style::Bold, color::Fg(color::Reset));
         let src_lines: Vec<&str> = source.split('\n').collect();
 
         match &self {
             &Self::UnknownCharacter(details, span) => {
-                print!("Unknown Character");
+                print!("unknown character");
                 self.print_details(details, span, src_lines);
             },
         }
