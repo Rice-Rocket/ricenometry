@@ -5,6 +5,14 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[workspace]
+members = [ "crates/proc-macros" ]
+
 [dependencies]
+regex = "1.10.4"
+fancy-regex = "0.13.0"
+
 rustyline = "14.0.0"
 termion = "3.0.0"
+
+proc-macros = { path = "crates/proc-macros" }

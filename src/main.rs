@@ -1,4 +1,7 @@
+mod lexer;
+
 use rustyline::{DefaultEditor, error::ReadlineError};
+use termion::color;
 
 fn main() {
     let mut stdin = DefaultEditor::new().unwrap();
@@ -19,7 +22,7 @@ fn main() {
                 break;
             },
             Err(err) => {
-                println!("stdin error: {}", err);
+                println!("{}stdin error{}: {}", color::Fg(color::Red), err, color::Fg(color::Reset));
                 break;
             }
         }
