@@ -1,17 +1,32 @@
 mod lexer;
+mod error;
 
-use rustyline::{DefaultEditor, error::ReadlineError};
+use rustyline::{error::ReadlineError, history::DefaultHistory, Config, EditMode, Editor};
 use termion::color;
 
+use crate::lexer::Lexer;
+
 fn main() {
-    let mut stdin = DefaultEditor::new().unwrap();
+    let mut stdin = Editor::<(), DefaultHistory>::with_config(
+        Config::builder()
+            .edit_mode(EditMode::Vi)
+            .build()
+    ).unwrap();
 
     println!();
 
     loop {
         match stdin.readline(">> ") {
             Ok(input) => {
-                println!("{}", input);
+                let mut lexer = Lexer::new(&input);
+                match lexer.tokenize() {
+                    Ok(tokens) => {
+                        println!("{:?}", tokens)
+                    },
+                    Err(err) => {
+                        err.print(&input);
+                    }
+                }
             },
             Err(ReadlineError::Interrupted) => {
                 println!("^C");
