@@ -52,6 +52,27 @@ fn main() {
                                 err.print(&input);
                             }
                         }
+                    },
+                    other => {
+                        let mut lexer = Lexer::new(&input);
+                        match lexer.tokenize() {
+                            Ok(tokens) => {
+                                let mut parser = Parser::new(tokens);
+                                match parser.parse() {
+                                    Ok(ast) => {
+                                        match other {
+                                            _ => unreachable!(),
+                                        }
+                                    },
+                                    Err(err) => {
+                                        err.print(&input)
+                                    }
+                                }
+                            },
+                            Err(err) => {
+                                err.print(&input);
+                            }
+                        }
                     }
                 }
             },
