@@ -7,6 +7,7 @@ use termion::{color, style};
 
 pub enum Error {
     UnknownCharacter(String, Span),
+    Syntax(String, Span),
 }
 
 
@@ -15,12 +16,14 @@ impl Error {
     pub fn span(&self) -> Span {
         match self {
             Self::UnknownCharacter(_, span) => *span,
+            Self::Syntax(_, span) => *span,
         }
     }
 
     pub fn with_span(self, span: Span) -> Self {
         match self {
             Self::UnknownCharacter(details, _) => Self::UnknownCharacter(details, span),
+            Self::Syntax(details, _) => Self::Syntax(details, span),
         }
     }
 
@@ -28,11 +31,15 @@ impl Error {
         print!("\n{}{}error{}: ", color::Fg(color::Red), style::Bold, color::Fg(color::Reset));
         let src_lines: Vec<&str> = source.split('\n').collect();
 
-        match &self {
-            &Self::UnknownCharacter(details, span) => {
+        match self {
+            Self::UnknownCharacter(details, span) => {
                 print!("unknown character");
                 self.print_details(details, span, src_lines);
             },
+            Self::Syntax(details, span) => {
+                print!("syntax");
+                self.print_details(details, span, src_lines);
+            }
         }
     }
 

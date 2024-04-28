@@ -1,3 +1,5 @@
+use proc_macros::StringifyEnum;
+
 use crate::error::span::Span;
 
 use super::raw_token::RawTokenType;
@@ -24,12 +26,12 @@ impl Token {
 
 impl std::fmt::Debug for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{}]", self.ty)
+        write!(f, "[{:?}]", self.ty)
     }
 }
 
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy, StringifyEnum)]
 pub enum TokenType {
     Decimal(f64),
 
@@ -86,12 +88,22 @@ pub enum TokenType {
     Eof,
 }
 
-impl std::fmt::Display for TokenType {
+impl std::fmt::Debug for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             &TokenType::Decimal(val) => write!(f, "Decimal({})", val),
 
-            no_val => write!(f, "{:?}", no_val)
+            no_val => write!(f, "{}", no_val.stringify_field())
+        }
+    }
+}
+
+impl std::fmt::Display for TokenType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            &TokenType::Decimal(val) => write!(f, "{}", val),
+
+            no_val => write!(f, "{}", no_val.stringify_pretty())
         }
     }
 }
@@ -159,5 +171,49 @@ impl From<RawTokenType> for TokenType {
             RawTokenType::Eol => Self::Eol,
             RawTokenType::Eof => Self::Eof,
         }
+    }
+}
+
+impl PartialEq<RawTokenType> for TokenType {
+    fn eq(&self, rhs: &RawTokenType) -> bool {
+        match (self, rhs) {
+            (&Self::Decimal(_), &RawTokenType::Decimal) => true,
+            (&Self::Add, &RawTokenType::Add) => true,
+            (&Self::Sub, &RawTokenType::Sub) => true,
+            (&Self::Mul, &RawTokenType::Mul) => true,
+            (&Self::Div, &RawTokenType::Div) => true,
+            (&Self::Pow, &RawTokenType::Pow) => true,
+            (&Self::GreaterThan, &RawTokenType::GreaterThan) => true,
+            (&Self::LessThan, &RawTokenType::LessThan) => true,
+            (&Self::GreaterThanEq, &RawTokenType::GreaterThanEq) => true,
+            (&Self::LessThanEq, &RawTokenType::LessThanEq) => true,
+            (&Self::Equals, &RawTokenType::Equals) => true,
+            (&Self::NotEquals, &RawTokenType::NotEquals) => true,
+            (&Self::Pipe, &RawTokenType::Pipe) => true,
+            (&Self::Bang, &RawTokenType::Bang) => true,
+            (&Self::Comma, &RawTokenType::Comma) => true,
+            (&Self::Semicolon, &RawTokenType::Semicolon) => true,
+            (&Self::Tick, &RawTokenType::Tick) => true,
+            (&Self::LBrace, &RawTokenType::LBrace) => true,
+            (&Self::RBrace, &RawTokenType::RBrace) => true,
+            (&Self::LBracket, &RawTokenType::LBracket) => true,
+            (&Self::RBracket, &RawTokenType::RBracket) => true,
+            (&Self::LParen, &RawTokenType::LParen) => true,
+            (&Self::RParen, &RawTokenType::RParen) => true,
+            (&Self::Whitespace, &RawTokenType::Whitespace) => true,
+            (&Self::Eol, &RawTokenType::Eol) => true,
+            (&Self::Eof, &RawTokenType::Eof) => true,
+            _ => false,
+        }
+    }
+}
+
+
+#[macro_export]
+macro_rules! tteq {
+    ($tty:expr => $match0:ident $(,$match:ident)* $(,)*) => {
+        ($tty == RawTokenType::$match0) $(
+            || ($tty == RawTokenType::$match)
+        )*
     }
 }
