@@ -44,7 +44,7 @@ impl Parser {
         Ok(res)
     }
 
-    fn factor(&mut self) -> Result<Node, Error> {
+    fn atom(&mut self) -> Result<Node, Error> {
         let token = self.current_token;
 
         if tteq!(token.ty => Decimal) {
@@ -54,7 +54,7 @@ impl Parser {
 
         if tteq!(token.ty => Add, Sub) {
             self.advance();
-            let node = self.factor()?;
+            let node = self.atom()?;
             return Ok(Node::UnaryOp { token, node: Box::new(node) });
         }
 
@@ -69,6 +69,10 @@ impl Parser {
         }
 
         Err(Error::Syntax("expected decimal, '+', '-' or '('".to_string(), self.current_token.span))
+    }
+
+    fn factor(&mut self) -> Result<Node, Error> {
+        self.bin_op(Self::atom, Self::atom, &[TokenType::Pow])
     }
 
     fn term(&mut self) -> Result<Node, Error> {
