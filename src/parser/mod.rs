@@ -1,6 +1,6 @@
 pub mod node;
 
-use crate::{error::Error, lexer::{token::{Token, TokenType}, raw_token::RawTokenType}, tteq};
+use crate::{error::{span::Span, Error}, lexer::{raw_token::RawTokenType, token::{Token, TokenType}}, tteq, ttne};
 use node::Node;
 
 pub struct Parser {
@@ -13,7 +13,7 @@ pub struct Parser {
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
         Self {
-            current_token: tokens[0],
+            current_token: tokens[0].clone(),
             tokens, 
             token_index: 0,
             advance_count: 0,
@@ -24,7 +24,7 @@ impl Parser {
         self.token_index += 1;
         self.advance_count += 1;
         if self.token_index < self.tokens.len() {
-            self.current_token = self.tokens[self.token_index];
+            self.current_token = self.tokens[self.token_index].clone();
         }
     }
 
@@ -32,7 +32,7 @@ impl Parser {
         self.token_index -= 1;
         self.advance_count -= 1;
         if self.token_index < self.tokens.len() {
-            self.current_token = self.tokens[self.token_index]
+            self.current_token = self.tokens[self.token_index].clone();
         }
     }
 
@@ -45,17 +45,22 @@ impl Parser {
     }
 
     fn atom(&mut self) -> Result<Node, Error> {
-        let token = self.current_token;
+        let token = self.current_token.clone();
 
         if tteq!(token.ty => Decimal) {
             self.advance();
-            return Ok(Node::Decimal { token });
+            return Ok(Node::Constant { token: token.clone() });
+        }
+
+        if tteq!(token.ty => Identifier) {
+            self.advance();
+            return Ok(Node::Variable { name: token.clone() });
         }
 
         if tteq!(token.ty => Add, Sub) {
             self.advance();
             let node = self.atom()?;
-            return Ok(Node::UnaryOp { token, node: Box::new(node) });
+            return Ok(Node::UnaryOp { token: token.clone(), node: Box::new(node) });
         }
 
         if tteq!(token.ty => LParen) {
@@ -71,12 +76,81 @@ impl Parser {
         Err(Error::Syntax("expected decimal, '+', '-' or '('".to_string(), self.current_token.span))
     }
 
+    fn call(&mut self) -> Result<Node, Error> {
+        let call_start = self.current_token.span.pos_1;
+        let atom = self.atom()?;
+
+        if let Node::Variable { name } = atom.clone() {
+            if tteq!(self.current_token.ty => LBracket) {
+                self.advance();
+                let mut args = Vec::new();
+
+                if tteq!(self.current_token.ty => RBracket) {
+                    self.advance();
+                } else {
+                    args.push(self.expr()?);
+
+                    while tteq!(self.current_token.ty => Comma) {
+                        self.advance();
+                        args.push(self.expr()?);
+                    }
+
+                    if ttne!(self.current_token.ty => RBracket) {
+                        return Err(Error::Syntax("expected ',' or ']'".to_string(), self.current_token.span));
+                    }
+                    self.advance();
+                }
+
+                return Ok(Node::Call { name, args, span: Span::new(call_start, self.current_token.span.pos_2 ) });
+            }
+        }
+
+        Ok(atom)
+    }
+
     fn factor(&mut self) -> Result<Node, Error> {
-        self.bin_op(Self::atom, Self::atom, &[TokenType::Pow])
+        self.bin_op(Self::call, Self::call, &[TokenType::Pow])
     }
 
     fn term(&mut self) -> Result<Node, Error> {
-        self.bin_op(Self::factor, Self::factor, &[TokenType::Mul, TokenType::Div])
+        let mut left = self.factor()?;
+
+        loop {
+            let mut should_break = false;
+
+            if tteq!(self.current_token.ty => Mul, Div) {
+                let token = self.current_token.clone();
+                self.advance();
+                let right = self.factor()?;
+                left = Node::BinaryOp { token, left: Box::new(left), right: Box::new(right) }
+            } else {
+                should_break = true;
+            }
+
+            if tteq!(self.current_token.ty => Add, Sub) {
+                break;
+            }
+
+            let cur_span = self.current_token.span;
+            match self.factor() {
+                Ok(right) => {
+                    left = Node::BinaryOp {
+                        token: Token { ty: TokenType::Mul, span: cur_span.move_by(-1) },
+                        left: Box::new(left),
+                        right: Box::new(right),
+                    };
+                },
+                Err(err) => {
+                    if cur_span == self.current_token.span {
+                        if should_break { break };
+                    } else {
+                        return Err(err);
+                    }
+                }
+            }
+        }
+
+        Ok(left)
     }
 
     fn expr(&mut self) -> Result<Node, Error> {
@@ -91,7 +165,7 @@ impl Parser {
         let mut left = left_fn(self)?;
 
         while tokens.iter().any(|t| t == &self.current_token.ty) {
-            let token = self.current_token;
+            let token = self.current_token.clone();
             self.advance();
             let right = right_fn(self)?;
             left = Node::BinaryOp { token, left: Box::new(left), right: Box::new(right) };

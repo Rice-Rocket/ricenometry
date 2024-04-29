@@ -1,6 +1,6 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
-use syn::{parse_macro_input, Data, DeriveInput, Expr, Meta};
+use syn::{parse_macro_input, Data, DeriveInput, Expr, Fields, Meta};
 use quote::quote;
 
 
@@ -55,7 +55,12 @@ pub fn derive_stringify_enum(input: TokenStream) -> TokenStream {
 
     let Data::Enum(enum_data) = data else { return quote! { () }.into() };
     let variant_idents = enum_data.variants.iter().map(|x| &x.ident);
-    let variant_fields = enum_data.variants.iter().map(|x| &x.fields);
+    let variant_fields = enum_data.variants.iter().map(|x| &x.fields)
+        .map(|x| match x {
+            Fields::Unit => quote! {},
+            Fields::Named(_) => quote! { { .. } },
+            Fields::Unnamed(_) => quote! { ( .. ) },
+        });
     let variant_idents1 = variant_idents.clone();
     let variant_fields1 = variant_fields.clone();
     let variant_docs = enum_data.variants.iter()
@@ -80,7 +85,7 @@ pub fn derive_stringify_enum(input: TokenStream) -> TokenStream {
 
     quote! {
         impl #generics #ident #generics #where_clause {
-            pub fn stringify_field(self) -> &'static str {
+            pub fn stringify_field(&self) -> &'static str {
                 match self {
                     #(
                         #ident::#variant_idents #variant_fields => #variant_strs,
@@ -88,7 +93,7 @@ pub fn derive_stringify_enum(input: TokenStream) -> TokenStream {
                 }
             }
 
-            pub fn stringify_pretty(self) -> &'static str {
+            pub fn stringify_pretty(&self) -> &'static str {
                 match self {
                     #(
                         #ident::#variant_idents1 #variant_fields1 => #variant_docs,

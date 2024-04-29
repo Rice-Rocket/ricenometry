@@ -1,11 +1,11 @@
 use std::collections::VecDeque;
 use termion::color;
 
-use crate::lexer::token::Token;
+use crate::{error::span::Span, lexer::token::Token};
 
 #[derive(Clone)]
 pub enum Node {
-    Decimal {
+    Constant {
         token: Token,
     },
     BinaryOp {
@@ -16,23 +16,35 @@ pub enum Node {
     UnaryOp {
         token: Token,
         node: Box<Node>,
-    }
+    },
+    Call {
+        name: Token,
+        args: Vec<Node>,
+        span: Span,
+    },
+    Variable {
+        name: Token,
+    },
 }
 
 impl Node {
     fn fmt_root(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Node::Decimal { token } => write!(f, "{}{:?}{}", color::Fg(color::Yellow), token.ty, color::Fg(color::Reset)),
+            Node::Constant { token } => write!(f, "{}{:?}{}", color::Fg(color::Yellow), token.ty, color::Fg(color::Reset)),
             Node::BinaryOp { token, .. } => write!(f, "{}{:?}{}", color::Fg(color::LightGreen), token.ty, color::Fg(color::Reset)),
             Node::UnaryOp { token, .. } => write!(f, "{}{:?}{}", color::Fg(color::LightBlue), token.ty, color::Fg(color::Reset)),
+            Node::Call { name, .. } => write!(f, "{}Call({}){}", color::Fg(color::LightRed), name.ty, color::Fg(color::Reset)),
+            Node::Variable { name } => write!(f, "{}Var({}){}", color::Fg(color::LightMagenta), name.ty, color::Fg(color::Reset))
         }
     }
 
     fn leaves(&self) -> Vec<Node> {
         match self {
-            Node::Decimal { .. } => vec![],
+            Node::Constant { .. } => vec![],
             Node::BinaryOp { left, right, .. } => vec![*left.clone(), *right.clone()],
             Node::UnaryOp { node, .. } => vec![*node.clone()],
+            Node::Call { args, .. } => args.to_vec(),
+            Node::Variable { .. } => vec![],
         }
     }
 }
@@ -40,9 +52,11 @@ impl Node {
 impl std::fmt::Debug for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Node::Decimal { token } => write!(f, "{}", token.ty),
-            Node::BinaryOp { token, left, right } => write!(f, "({}) {} ({})", left, token.ty, right),
-            Node::UnaryOp { token, node } => write!(f, "{}{}", token.ty, node),
+            Node::Constant { token } => write!(f, "{}", token.ty),
+            Node::BinaryOp { token, left, right } => write!(f, "({:?} {} {:?})", left, token.ty, right),
+            Node::UnaryOp { token, node } => write!(f, "{}{:?}", token.ty, node),
+            Node::Call { name, args, .. } => write!(f, "{:?}{:?}", name, args),
+            Node::Variable { name } => write!(f, "{}", name.ty),
         }
     }
 }

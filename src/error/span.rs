@@ -2,7 +2,7 @@ use std::ops::{Add, Range};
 
 use super::position::Position;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Span {
     pub pos_1: Position,
     pub pos_2: Position,
@@ -28,20 +28,31 @@ impl Span {
         self.pos_1.line..self.pos_2.line + 1
     }
 
-    pub fn add_back(self, amount: usize) -> Self {
-        Self {
-            pos_2: self.pos_2.forward_by(amount),
-            ..self
+    pub fn add_by(self, amount: isize) -> Self {
+        if amount > 0 {
+            Self {
+                pos_2: self.pos_2.forward_by(amount as usize),
+                ..self
+            }
+        } else {
+            Self {
+                pos_1: self.pos_1.backward_by((-amount) as usize),
+                ..self
+            }
         }
     }
 
-    pub fn add_front(self, amount: usize) -> Self {
-        let mut pos_1 = self.pos_1;
-        pos_1.column -= amount;
-
-        Self {
-            pos_1: self.pos_1.backward_by(amount),
-            ..self
+    pub fn move_by(self, amount: isize) -> Self {
+        if amount > 0 {
+            Self {
+                pos_1: self.pos_1.forward_by(amount as usize),
+                pos_2: self.pos_2.forward_by(amount as usize),
+            }
+        } else {
+            Self {
+                pos_1: self.pos_1.backward_by((-amount) as usize),
+                pos_2: self.pos_2.backward_by((-amount) as usize),
+            }
         }
     }
 

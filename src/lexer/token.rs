@@ -4,7 +4,7 @@ use crate::error::span::Span;
 
 use super::raw_token::RawTokenType;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct Token {
     pub ty: TokenType,
     pub span: Span,
@@ -14,6 +14,7 @@ impl Token {
     pub fn new(raw: RawTokenType, span: Span, text: &str) -> Self {
         let ty = match raw {
             RawTokenType::Decimal => TokenType::Decimal(text.parse().unwrap()),
+            RawTokenType::Identifier => TokenType::Identifier(text.to_string()),
             _ => raw.into()
         };
 
@@ -31,9 +32,10 @@ impl std::fmt::Debug for Token {
 }
 
 
-#[derive(Clone, Copy, StringifyEnum)]
+#[derive(Clone, StringifyEnum)]
 pub enum TokenType {
     Decimal(f64),
+    Identifier(String),
 
     /// +
     Add,
@@ -91,7 +93,8 @@ pub enum TokenType {
 impl std::fmt::Debug for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            &TokenType::Decimal(val) => write!(f, "Decimal({})", val),
+            TokenType::Decimal(val) => write!(f, "Decimal({})", val),
+            TokenType::Identifier(val) => write!(f, "Ident({})", val),
 
             no_val => write!(f, "{}", no_val.stringify_field())
         }
@@ -101,7 +104,8 @@ impl std::fmt::Debug for TokenType {
 impl std::fmt::Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            &TokenType::Decimal(val) => write!(f, "{}", val),
+            TokenType::Decimal(val) => write!(f, "{}", val),
+            TokenType::Identifier(val) => write!(f, "{}", val),
 
             no_val => write!(f, "{}", no_val.stringify_pretty())
         }
@@ -112,6 +116,7 @@ impl PartialEq for TokenType {
     fn eq(&self, other: &Self) -> bool {
         matches!((self, other), 
             (&Self::Decimal(_), &Self::Decimal(_)) | 
+            (&Self::Identifier(_), &Self::Identifier(_)) |
             (&Self::Add, &Self::Add) |
             (&Self::Sub, &Self::Sub) |
             (&Self::Mul, &Self::Mul) |
@@ -145,6 +150,7 @@ impl From<RawTokenType> for TokenType {
     fn from(value: RawTokenType) -> Self {
         match value {
             RawTokenType::Decimal => Self::Decimal(0.0),
+            RawTokenType::Identifier => Self::Identifier(String::new()),
             RawTokenType::Add => Self::Add,
             RawTokenType::Sub => Self::Sub,
             RawTokenType::Mul => Self::Mul,
@@ -176,35 +182,34 @@ impl From<RawTokenType> for TokenType {
 
 impl PartialEq<RawTokenType> for TokenType {
     fn eq(&self, rhs: &RawTokenType) -> bool {
-        match (self, rhs) {
-            (&Self::Decimal(_), &RawTokenType::Decimal) => true,
-            (&Self::Add, &RawTokenType::Add) => true,
-            (&Self::Sub, &RawTokenType::Sub) => true,
-            (&Self::Mul, &RawTokenType::Mul) => true,
-            (&Self::Div, &RawTokenType::Div) => true,
-            (&Self::Pow, &RawTokenType::Pow) => true,
-            (&Self::GreaterThan, &RawTokenType::GreaterThan) => true,
-            (&Self::LessThan, &RawTokenType::LessThan) => true,
-            (&Self::GreaterThanEq, &RawTokenType::GreaterThanEq) => true,
-            (&Self::LessThanEq, &RawTokenType::LessThanEq) => true,
-            (&Self::Equals, &RawTokenType::Equals) => true,
-            (&Self::NotEquals, &RawTokenType::NotEquals) => true,
-            (&Self::Pipe, &RawTokenType::Pipe) => true,
-            (&Self::Bang, &RawTokenType::Bang) => true,
-            (&Self::Comma, &RawTokenType::Comma) => true,
-            (&Self::Semicolon, &RawTokenType::Semicolon) => true,
-            (&Self::Tick, &RawTokenType::Tick) => true,
-            (&Self::LBrace, &RawTokenType::LBrace) => true,
-            (&Self::RBrace, &RawTokenType::RBrace) => true,
-            (&Self::LBracket, &RawTokenType::LBracket) => true,
-            (&Self::RBracket, &RawTokenType::RBracket) => true,
-            (&Self::LParen, &RawTokenType::LParen) => true,
-            (&Self::RParen, &RawTokenType::RParen) => true,
-            (&Self::Whitespace, &RawTokenType::Whitespace) => true,
-            (&Self::Eol, &RawTokenType::Eol) => true,
-            (&Self::Eof, &RawTokenType::Eof) => true,
-            _ => false,
-        }
+        matches!((self, rhs), 
+            (&Self::Decimal(_), &RawTokenType::Decimal) | 
+            (&Self::Identifier(_), &RawTokenType::Identifier) |
+            (&Self::Add, &RawTokenType::Add) | 
+            (&Self::Sub, &RawTokenType::Sub) | 
+            (&Self::Mul, &RawTokenType::Mul) | 
+            (&Self::Div, &RawTokenType::Div) | 
+            (&Self::Pow, &RawTokenType::Pow) | 
+            (&Self::GreaterThan, &RawTokenType::GreaterThan) | 
+            (&Self::LessThan, &RawTokenType::LessThan) | 
+            (&Self::GreaterThanEq, &RawTokenType::GreaterThanEq) | 
+            (&Self::LessThanEq, &RawTokenType::LessThanEq) | 
+            (&Self::Equals, &RawTokenType::Equals) | 
+            (&Self::NotEquals, &RawTokenType::NotEquals) | 
+            (&Self::Pipe, &RawTokenType::Pipe) | 
+            (&Self::Bang, &RawTokenType::Bang) | 
+            (&Self::Comma, &RawTokenType::Comma) | 
+            (&Self::Semicolon, &RawTokenType::Semicolon) | 
+            (&Self::Tick, &RawTokenType::Tick) | 
+            (&Self::LBrace, &RawTokenType::LBrace) | 
+            (&Self::RBrace, &RawTokenType::RBrace) | 
+            (&Self::LBracket, &RawTokenType::LBracket) | 
+            (&Self::RBracket, &RawTokenType::RBracket) | 
+            (&Self::LParen, &RawTokenType::LParen) | 
+            (&Self::RParen, &RawTokenType::RParen) | 
+            (&Self::Whitespace, &RawTokenType::Whitespace) | 
+            (&Self::Eol, &RawTokenType::Eol) | 
+            (&Self::Eof, &RawTokenType::Eof))
     }
 }
 
@@ -214,6 +219,15 @@ macro_rules! tteq {
     ($tty:expr => $match0:ident $(,$match:ident)* $(,)*) => {
         ($tty == RawTokenType::$match0) $(
             || ($tty == RawTokenType::$match)
+        )*
+    }
+}
+
+#[macro_export]
+macro_rules! ttne {
+    ($tty:expr => $match0:ident $(,$match:ident)* $(,)*) => {
+        ($tty != RawTokenType::$match0) $(
+            && ($tty != RawTokenType::$match)
         )*
     }
 }

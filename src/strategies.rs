@@ -17,18 +17,18 @@ pub fn print_runstrats() {
 }
 
 
-pub fn select_runstrats(stdin: &mut Editor<(), DefaultHistory>) -> rustyline::Result<RunStrategies> {
+pub fn select_runstrats(stdin: &mut Editor<(), DefaultHistory>, depth: u16) -> rustyline::Result<RunStrategies> {
     match stdin.readline("= ") {
         Ok(input) => {
             if let Ok(index) = input.parse::<usize>() {
                 if let Some(opt) = RunStrategies::iter_fields().nth(index) {
-                    print!("{}{}", cursor::Up(RunStrategies::iter_fields().count() as u16 + 1), termion::clear::AfterCursor);
+                    print!("{}{}", cursor::Up(RunStrategies::iter_fields().count() as u16 + 1 + depth), termion::clear::AfterCursor);
                     Ok(opt)
                 } else {
-                    select_runstrats(stdin)
+                    select_runstrats(stdin, depth + 1)
                 }
             } else {
-                select_runstrats(stdin)
+                select_runstrats(stdin, depth + 1)
             }
         },
         Err(err) => {

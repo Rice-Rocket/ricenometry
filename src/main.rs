@@ -21,7 +21,7 @@ fn main() {
         match stdin.readline(">> ") {
             Ok(input) => {
                 print_runstrats();
-                let Ok(opts) = select_runstrats(&mut stdin) else { break };
+                let Ok(opts) = select_runstrats(&mut stdin, 0) else { break };
                 match opts {
                     RunStrategies::ShowAST => {
                         let mut lexer = Lexer::new(&input);
@@ -30,6 +30,7 @@ fn main() {
                                 let mut parser = Parser::new(tokens);
                                 match parser.parse() {
                                     Ok(ast) => {
+                                        println!();
                                         println!("{}", ast);
                                     },
                                     Err(err) => {
@@ -46,7 +47,9 @@ fn main() {
                         let mut lexer = Lexer::new(&input);
                         match lexer.tokenize() {
                             Ok(tokens) => {
+                                println!();
                                 println!("{:?}", tokens);
+                                println!();
                             },
                             Err(err) => {
                                 err.print(&input);

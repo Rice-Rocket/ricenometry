@@ -4,6 +4,7 @@ use fancy_regex::Regex;
 #[derive(Debug, Clone, Copy, IterEnum)]
 pub enum RawTokenType {
     Decimal,
+    Identifier,
     Add,
     Sub,
     Mul,
@@ -35,6 +36,7 @@ impl RawTokenType {
     pub fn regex(self) -> Option<Regex> {
         match self {
             RawTokenType::Decimal => Some(Regex::new(r"([0-9]+\.?([0-9]+)?|\.[0-9]+)").unwrap()),
+            RawTokenType::Identifier => Some(Regex::new(r"([a-zA-Z_][a-zA-Z0-9_]*)").unwrap()),
             RawTokenType::Add => Some(Regex::new(r"\+").unwrap()),
             RawTokenType::Sub => Some(Regex::new(r"-").unwrap()),
             RawTokenType::Mul => Some(Regex::new(r"\*").unwrap()),
