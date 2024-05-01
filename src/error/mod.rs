@@ -11,7 +11,6 @@ pub enum Error {
 }
 
 
-#[allow(dead_code)]
 impl Error {
     pub fn span(&self) -> Span {
         match self {

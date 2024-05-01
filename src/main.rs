@@ -1,7 +1,11 @@
+#![allow(unused)]
+
 mod lexer;
 mod error;
 mod parser;
 mod strategies;
+mod expr;
+mod prelude;
 
 use rustyline::{error::ReadlineError, history::DefaultHistory, Config, EditMode, Editor};
 use termion::color;

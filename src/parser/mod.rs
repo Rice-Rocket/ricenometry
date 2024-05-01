@@ -1,6 +1,7 @@
 pub mod node;
 
-use crate::{error::{span::Span, Error}, lexer::{raw_token::RawTokenType, token::{Token, TokenType}}, tteq, ttne};
+use crate::{lexer::{raw_token::RawTokenType, token::{Token, TokenType}}, tteq, ttne};
+use crate::prelude::*;
 use node::Node;
 
 pub struct Parser {
@@ -36,15 +37,15 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Result<Node, Error> {
-        let res = self.expr()?;
+    pub fn parse(&mut self) -> Result<Node> {
+        let res = self.stmt()?;
         if self.current_token.ty != TokenType::Eof {
             return Err(Error::Syntax("expected '+', '-', '*', '/', or '^'".to_string(), self.current_token.span))
         }
         Ok(res)
     }
 
-    fn atom(&mut self) -> Result<Node, Error> {
+    fn atom(&mut self) -> Result<Node> {
         let token = self.current_token.clone();
 
         if tteq!(token.ty => Decimal) {
@@ -76,7 +77,7 @@ impl Parser {
         Err(Error::Syntax("expected decimal, '+', '-' or '('".to_string(), self.current_token.span))
     }
 
-    fn call(&mut self) -> Result<Node, Error> {
+    fn call(&mut self) -> Result<Node> {
         let call_start = self.current_token.span.pos_1;
         let atom = self.atom()?;
 
@@ -108,11 +109,11 @@ impl Parser {
         Ok(atom)
     }
 
-    fn factor(&mut self) -> Result<Node, Error> {
+    fn factor(&mut self) -> Result<Node> {
         self.bin_op(Self::call, Self::call, &[TokenType::Pow])
     }
 
-    fn term(&mut self) -> Result<Node, Error> {
+    fn term(&mut self) -> Result<Node> {
         let mut left = self.factor()?;
 
         loop {
@@ -153,14 +154,25 @@ impl Parser {
         Ok(left)
     }
 
-    fn expr(&mut self) -> Result<Node, Error> {
+    fn expr(&mut self) -> Result<Node> {
         self.bin_op(Self::term, Self::term, &[TokenType::Add, TokenType::Sub])
     }
 
-    fn bin_op<F, G>(&mut self, left_fn: F, right_fn: G, tokens: &[TokenType]) -> Result<Node, Error> 
+    fn stmt(&mut self) -> Result<Node> {
+        self.bin_op(Self::expr, Self::expr, &[
+            TokenType::Equals,
+            TokenType::NotEquals,
+            TokenType::GreaterThan,
+            TokenType::LessThan,
+            TokenType::GreaterThanEq,
+            TokenType::LessThanEq,
+        ])
+    }
+
+    fn bin_op<F, G>(&mut self, left_fn: F, right_fn: G, tokens: &[TokenType]) -> Result<Node> 
     where 
-        F: Fn(&mut Self) -> Result<Node, Error>,
-        G: Fn(&mut Self) -> Result<Node, Error>
+        F: Fn(&mut Self) -> Result<Node>,
+        G: Fn(&mut Self) -> Result<Node>
     {
         let mut left = left_fn(self)?;
 

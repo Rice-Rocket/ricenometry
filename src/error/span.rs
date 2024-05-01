@@ -8,7 +8,6 @@ pub struct Span {
     pub pos_2: Position,
 }
 
-#[allow(dead_code)]
 impl Span {
     pub fn new(pos_1: Position, pos_2: Position) -> Self {
         Self {

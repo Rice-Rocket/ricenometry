@@ -7,7 +7,7 @@ use token::{Token, TokenType};
 use raw_token::RawTokenType;
 use regex_set::RegexSet;
 
-use crate::error::{position::Position, span::Span, Error};
+use crate::prelude::*;
 
 
 pub struct Lexer<'a> {
@@ -40,7 +40,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn tokenize(&mut self) -> Result<Vec<Token>, Error> {
+    pub fn tokenize(&mut self) -> Result<Vec<Token>> {
         let mut tokens = Vec::new();
 
         loop {
