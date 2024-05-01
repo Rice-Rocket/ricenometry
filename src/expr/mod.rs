@@ -106,7 +106,7 @@ impl From<Node> for Expr {
                 _ => unreachable!(),
             },
             Node::UnaryOp { token, node } => Expr::Negation(Box::new(Expr::from(*node))),
-            Node::Call { name, args, span } => todo!(),
+            Node::Call { name, params, args, span } => todo!(),
         }
     }
 }

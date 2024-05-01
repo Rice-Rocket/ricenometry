@@ -69,6 +69,8 @@ pub enum TokenType {
     Comma,
     /// ;
     Semicolon,
+    /// :
+    Colon,
     /// '
     Tick,
 
@@ -132,6 +134,7 @@ impl PartialEq for TokenType {
             (&Self::Bang, &Self::Bang) |
             (&Self::Comma, &Self::Comma) |
             (&Self::Semicolon, &Self::Semicolon) |
+            (&Self::Colon, &Self::Colon) |
             (&Self::Tick, &Self::Tick) |
             (&Self::LBrace, &Self::LBrace) |
             (&Self::RBrace, &Self::RBrace) |
@@ -166,6 +169,7 @@ impl From<RawTokenType> for TokenType {
             RawTokenType::Bang => Self::Bang,
             RawTokenType::Comma => Self::Comma,
             RawTokenType::Semicolon => Self::Semicolon,
+            RawTokenType::Colon => Self::Colon,
             RawTokenType::Tick => Self::Tick,
             RawTokenType::LBrace => Self::LBrace,
             RawTokenType::RBrace => Self::RBrace,
@@ -200,6 +204,7 @@ impl PartialEq<RawTokenType> for TokenType {
             (&Self::Bang, &RawTokenType::Bang) | 
             (&Self::Comma, &RawTokenType::Comma) | 
             (&Self::Semicolon, &RawTokenType::Semicolon) | 
+            (&Self::Colon, &RawTokenType::Colon) | 
             (&Self::Tick, &RawTokenType::Tick) | 
             (&Self::LBrace, &RawTokenType::LBrace) | 
             (&Self::RBrace, &RawTokenType::RBrace) | 

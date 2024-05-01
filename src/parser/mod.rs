@@ -82,6 +82,22 @@ impl Parser {
         let atom = self.atom()?;
 
         if let Node::Variable { name } = atom.clone() {
+            let mut params = Vec::new();
+            if tteq!(self.current_token.ty => Colon) {
+                self.advance();
+                
+                params.push(self.expr()?);
+
+                while tteq!(self.current_token.ty => Colon) {
+                    self.advance();
+                    params.push(self.expr()?);
+                }
+
+                if ttne!(self.current_token.ty => LBracket) {
+                    return Err(Error::Syntax("expected ':' or '['".to_string(), self.current_token.span))
+                }
+            }
+
             if tteq!(self.current_token.ty => LBracket) {
                 self.advance();
                 let mut args = Vec::new();
@@ -102,7 +118,7 @@ impl Parser {
                     self.advance();
                 }
 
-                return Ok(Node::Call { name, args, span: Span::new(call_start, self.current_token.span.pos_2 ) });
+                return Ok(Node::Call { name, args, params, span: Span::new(call_start, self.current_token.span.pos_2 ) });
             }
         }
 

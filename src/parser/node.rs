@@ -19,6 +19,7 @@ pub enum Node {
     },
     Call {
         name: Token,
+        params: Vec<Node>,
         args: Vec<Node>,
         span: Span,
     },
@@ -33,7 +34,7 @@ impl Node {
             Node::Constant { token } => write!(f, "{}{:?}{}", color::Fg(color::Yellow), token.ty, color::Fg(color::Reset)),
             Node::BinaryOp { token, .. } => write!(f, "{}{:?}{}", color::Fg(color::LightGreen), token.ty, color::Fg(color::Reset)),
             Node::UnaryOp { token, .. } => write!(f, "{}{:?}{}", color::Fg(color::LightBlue), token.ty, color::Fg(color::Reset)),
-            Node::Call { name, .. } => write!(f, "{}Call({}){}", color::Fg(color::LightRed), name.ty, color::Fg(color::Reset)),
+            Node::Call { name, params, .. } => write!(f, "{}Call({})\n{:?}{}", color::Fg(color::LightRed), name.ty, params, color::Fg(color::Reset)),
             Node::Variable { name } => write!(f, "{}Var({}){}", color::Fg(color::LightMagenta), name.ty, color::Fg(color::Reset))
         }
     }
