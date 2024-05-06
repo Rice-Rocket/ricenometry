@@ -61,23 +61,21 @@ impl<'a> Lexer<'a> {
                     not_eq => not_eq,
                 })
             else {
-                return Err(Error::UnknownCharacter(
-                    format!(
-                        "'{}' is not a valid character", 
-                        &self.source[self.position.index..self.position.index + 1]
-                    ), 
-                    Span::new_single(self.position)
-                ));
+                return err!(
+                    UnknownCharacter, 
+                    "'{}' is not a valid character", 
+                    Span::new_single(self.position);
+                    &self.source[self.position.index..self.position.index + 1]
+                );
             };
             
             if start != 0 {
-                return Err(Error::UnknownCharacter(
-                    format!(
-                        "'{}' is not a valid character", 
-                        &self.source[self.position.index..self.position.index + 1]
-                    ), 
-                    Span::new_single(self.position)
-                ));
+                return err!(
+                    UnknownCharacter,
+                    "'{}' is not a valid character",
+                    Span::new_single(self.position);
+                    &self.source[self.position.index..self.position.index + 1]
+                )
             }
             
             let span = start + self.position.index..start + self.position.index + len;

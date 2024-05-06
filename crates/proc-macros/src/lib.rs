@@ -10,6 +10,7 @@ pub fn derive_iter_enum(input: TokenStream) -> TokenStream {
         ident,
         data,
         generics,
+        vis,
         ..
     } = parse_macro_input!(input as DeriveInput);
 
@@ -22,12 +23,12 @@ pub fn derive_iter_enum(input: TokenStream) -> TokenStream {
 
     quote! {
         impl #generics #ident #generics #where_clause {
-            pub fn iter_fields() -> #iter_ident {
+            #vis fn iter_fields() -> #iter_ident {
                 #iter_ident { iter: vec![#(#ident::#variant_idents),*].into_iter() }
             }
         }
 
-        pub struct #iter_ident #generics #where_clause {
+        #vis struct #iter_ident #generics #where_clause {
             iter: std::vec::IntoIter<#ident>,
         }
 
@@ -42,27 +43,68 @@ pub fn derive_iter_enum(input: TokenStream) -> TokenStream {
 }
 
 
+#[proc_macro_derive(FieldConstructor)]
+pub fn derive_field_constructor(input: TokenStream) -> TokenStream {
+    let DeriveInput {
+        ident, 
+        data,
+        generics,
+        vis,
+        ..
+    } = parse_macro_input!(input as DeriveInput);
+
+    let where_clause = &generics.where_clause;
+
+    let Data::Enum(data) = data else { return quote! { () }.into() };
+    let variant_idents: Vec<_> = data.variants.iter().map(|x| &x.ident).collect();
+    let fn_names = variant_idents.iter().map(|x| quote::format_ident!("{}", x.to_string().to_lowercase()));
+    let (variant_params, variant_fields): (Vec<_>, Vec<_>) = data.variants.iter()
+        .map(|x| match &x.fields {
+            Fields::Unit => (quote! {}, quote! {}),
+            Fields::Named(names) => {
+                let idents: Vec<_> = names.named.iter().map(|x| x.ident.as_ref().unwrap()).collect();
+                let types = names.named.iter().map(|x| &x.ty);
+                (quote! { #(#idents: #types,)* }, quote! { { #(#idents,)* } })
+            },
+            Fields::Unnamed(unnamed) => {
+                let idents: Vec<_> = unnamed.unnamed.iter().enumerate().map(|(i, _)| quote::format_ident!("x{}", i)).collect();
+                let types = unnamed.unnamed.iter().map(|x| &x.ty);
+                (quote! { #(#idents: #types,)* }, quote! { ( #(#idents,)* ) })
+            }
+        }).unzip();
+
+    quote! {
+        impl #generics #ident #generics #where_clause {
+            #(
+                #vis fn #fn_names(#variant_params) -> #ident {
+                    #ident::#variant_idents #variant_fields
+                }
+            )*
+        }
+    }.into()
+}
+
+
 #[proc_macro_derive(StringifyEnum)]
 pub fn derive_stringify_enum(input: TokenStream) -> TokenStream {
     let DeriveInput {
         ident,
         data,
         generics,
+        vis,
         ..
     } = parse_macro_input!(input as DeriveInput);
     
     let where_clause = &generics.where_clause;
 
     let Data::Enum(enum_data) = data else { return quote! { () }.into() };
-    let variant_idents = enum_data.variants.iter().map(|x| &x.ident);
-    let variant_fields = enum_data.variants.iter().map(|x| &x.fields)
+    let variant_idents: Vec<_> = enum_data.variants.iter().map(|x| &x.ident).collect();
+    let variant_fields: Vec<_> = enum_data.variants.iter().map(|x| &x.fields)
         .map(|x| match x {
             Fields::Unit => quote! {},
             Fields::Named(_) => quote! { { .. } },
             Fields::Unnamed(_) => quote! { ( .. ) },
-        });
-    let variant_idents1 = variant_idents.clone();
-    let variant_fields1 = variant_fields.clone();
+        }).collect();
     let variant_docs = enum_data.variants.iter()
         .map(|x| { 
             if x.attrs.is_empty() {
@@ -81,11 +123,11 @@ pub fn derive_stringify_enum(input: TokenStream) -> TokenStream {
                 }))
             }
         }).map(|x| if let Some(mut s) = x { s.next().unwrap() } else { "".to_string() });
-    let variant_strs = variant_idents.clone().map(|x| x.to_string());
+    let variant_strs = variant_idents.iter().map(|x| x.to_string());
 
     quote! {
         impl #generics #ident #generics #where_clause {
-            pub fn stringify_field(&self) -> &'static str {
+            #vis fn stringify_field(&self) -> &'static str {
                 match self {
                     #(
                         #ident::#variant_idents #variant_fields => #variant_strs,
@@ -93,10 +135,10 @@ pub fn derive_stringify_enum(input: TokenStream) -> TokenStream {
                 }
             }
 
-            pub fn stringify_pretty(&self) -> &'static str {
+            #vis fn stringify_pretty(&self) -> &'static str {
                 match self {
                     #(
-                        #ident::#variant_idents1 #variant_fields1 => #variant_docs,
+                        #ident::#variant_idents #variant_fields => #variant_docs,
                     )*
                 }
             }

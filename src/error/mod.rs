@@ -8,6 +8,7 @@ use termion::{color, style};
 pub enum Error {
     UnknownCharacter(String, Span),
     Syntax(String, Span),
+    InvalidCall(String, Span),
 }
 
 
@@ -16,6 +17,7 @@ impl Error {
         match self {
             Self::UnknownCharacter(_, span) => *span,
             Self::Syntax(_, span) => *span,
+            Self::InvalidCall(_, span) => *span,
         }
     }
 
@@ -23,6 +25,7 @@ impl Error {
         match self {
             Self::UnknownCharacter(details, _) => Self::UnknownCharacter(details, span),
             Self::Syntax(details, _) => Self::Syntax(details, span),
+            Self::InvalidCall(details, _) => Self::InvalidCall(details, span),
         }
     }
 
@@ -37,6 +40,10 @@ impl Error {
             },
             Self::Syntax(details, span) => {
                 print!("syntax");
+                self.print_details(details, span, src_lines);
+            },
+            Self::InvalidCall(details, span) => {
+                print!("invalid function call");
                 self.print_details(details, span, src_lines);
             }
         }
@@ -67,5 +74,15 @@ impl Error {
             String::from("^").repeat((span.pos_2.column - span.pos_1.column).max(1)),
             details, color::Fg(color::Reset), style::Reset
         );
+    }
+}
+
+
+#[macro_export]
+macro_rules! err {
+    ($ty:ident, $details:literal, $span:expr$(; $($f:expr),*)? $(,)*) => {
+        {
+            Err(Error::$ty(format!($details, $($($f,)*)?), $span))
+        }
     }
 }

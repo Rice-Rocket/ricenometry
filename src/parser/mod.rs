@@ -40,7 +40,7 @@ impl Parser {
     pub fn parse(&mut self) -> Result<Node> {
         let res = self.stmt()?;
         if self.current_token.ty != TokenType::Eof {
-            return Err(Error::Syntax("expected '+', '-', '*', '/', or '^'".to_string(), self.current_token.span))
+            return err!(Syntax, "expected '+', '-', '*', '/', or '^'", self.current_token.span);
         }
         Ok(res)
     }
@@ -71,10 +71,10 @@ impl Parser {
                 self.advance();
                 return Ok(expr);
             }
-            return Err(Error::Syntax("expected ')'".to_string(), self.current_token.span));
+            return err!(Syntax, "expected ')'", self.current_token.span);
         }
 
-        Err(Error::Syntax("expected decimal, '+', '-' or '('".to_string(), self.current_token.span))
+        err!(Syntax, "expected decimal, '+', '-' or '('", self.current_token.span)
     }
 
     fn call(&mut self) -> Result<Node> {
@@ -94,7 +94,7 @@ impl Parser {
                 }
 
                 if ttne!(self.current_token.ty => LBracket) {
-                    return Err(Error::Syntax("expected ':' or '['".to_string(), self.current_token.span))
+                    return err!(Syntax, "expected ':' or '['", self.current_token.span);
                 }
             }
 
@@ -113,7 +113,7 @@ impl Parser {
                     }
 
                     if ttne!(self.current_token.ty => RBracket) {
-                        return Err(Error::Syntax("expected ',' or ']'".to_string(), self.current_token.span));
+                        return err!(Syntax, "expected ',' or ']'", self.current_token.span);
                     }
                     self.advance();
                 }

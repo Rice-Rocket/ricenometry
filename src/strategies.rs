@@ -4,6 +4,8 @@ use termion::{style, color, cursor};
 
 #[derive(Clone, Copy, IterEnum, StringifyEnum)]
 pub enum RunStrategies {
+    /// Simplify
+    Simplify,
     /// Show AST
     ShowAST,
     /// Tokenize
